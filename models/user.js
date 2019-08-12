@@ -47,7 +47,11 @@ const UserSchema = mongoose.Schema({
       type: Boolean,
       default: false
   },
-  geometry: GeoSchema
+  geometry: GeoSchema,
+  timeF: Date,
+  timeT: Date,
+  pickupLng: String,
+  pickupLat: String
 });
 
 UserSchema.statics.getUserById = function(id, callback) {
