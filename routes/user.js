@@ -5,7 +5,8 @@ const passport = require('passport');
 const jwt = require('jsonwebtoken');
 const config = require('../config/database');
 const log = require('../log');
-
+const emailhandler = require("../models/emailconfig");
+var bcrypt = require('bcryptjs');
 // get a list of ninjas from the db
 router.get('/locationAdd/:id', function(req, res, next){
   console.log(req.params.id);
@@ -31,8 +32,10 @@ router.get('/location', function(req, res, next){
 // register
 router.post('/register', (req, res, next) => {
   let response = {success: false};
+  
   if (!(req.body.password == req.body.confirmPass)) {
     let err = 'The passwords don\'t match';
+    
     return next(err);
   }
   else {
@@ -49,11 +52,13 @@ router.post('/register', (req, res, next) => {
         res.json(response);
       } else {
         response.success = true;
-        response.msg = "User registered successfuly";
+    //    response.msg = "User registered successfuly";
+   response.msg = "Please check your mail to active the Account";
         response.user = {
           id: user._id,
           username: user.username
         }
+        emailhandler.mailhandleremailconfirm(user.email,user.username,'1212')
         console.log("[%s] registered successfuly", user.username);
         res.json(response);
       }
@@ -61,10 +66,12 @@ router.post('/register', (req, res, next) => {
   }
 });
 
+
+//login
 router.post("/authenticate", (req, res, next) => {
   let body = req.body;
   let response = {success: false};
-
+console.log("authonticate")
   User.authenticate(body.username.trim(), body.password.trim(), (err, user) => {
     if (err) {
       response.msg = err.msg;
@@ -98,6 +105,7 @@ router.get('/profile', passport.authenticate("jwt", {session: false}), (req, res
   res.json(response);
 });
 
+//meet
 router.post('/meet',function(req, res){
   console.log("apu data 1 - - - "+JSON.stringify(req.body))
 
@@ -127,6 +135,7 @@ router.post('/meet',function(req, res){
   })     
 })
 
+//register details
 router.post('/registerdetails',function(req, res){
   console.log("apu data 0 - - - "+JSON.stringify(req.body))
 
@@ -164,60 +173,103 @@ router.post('/registerdetails',function(req, res){
 //     });
 // });
 
+// router.get('/all',  passport.authenticate("jwt", {session: false}), (req, res, next) => {
+//   let usr = [];
+//   User.find({_id: req.user.id})
+//     .then(user => {
+//       console.log(user[0].pickupLat);
+//       console.log(user[0].pickupLng);
+//       User.geoNear(
+//           {type: 'Point', coordinates: [parseFloat(user[0].pickupLng), parseFloat(user[0].pickupLat)]},
+//           {maxDistance: 1000, spherical: true}
+  
+//       ).then(function(users){
+//         for(var u of users){
+//           usr.push(u.obj._id);
+//         }
+//         console.log(usr);
+//         console.log(new Date(user[0].timeF));
+//         console.log(new Date(user[0].timeT));
+//         // res.status(200).send(users);
+//         User.find(
+//           {$and : [{ _id: { "$in" : usr}, interest: { "$in" : user[0].interest}, myProf: user[0].intProf }, 
+//           {$or: [ 
+//             { timeF : { $lte: new Date(user[0].timeF) }, timeT : { $gte: new Date(user[0].timeF) } },
+//             { timeF : { $lte: new Date(user[0].timeT) }, timeT : { $gte: new Date(user[0].timeT) } },
+//             { timeF : { $gte: new Date(user[0].timeF) }, timeT : { $lte: new Date(user[0].timeT) } }
+//           ]}]
+//         }
+//         ).then(users => {
+         
+//           let response = {
+//             success: true,
+//             users: users
+//           };
+//           res.status(200).send(response);
+//         })
+//       }).catch(next);
+//     })
+//     .catch(err => {
+//       log.err('mongo', 'failed to get users', err.message || err);
+//       return next(new Error('Failed to get users'));
+//     });
+
+// });
+
+
 router.get('/all',  passport.authenticate("jwt", {session: false}), (req, res, next) => {
-  let usr = [];
-  User.find({_id: req.user.id})
-    .then(user => {
-      console.log(user[0].pickupLat);
-      console.log(user[0].pickupLng);
-      User.geoNear(
-          {type: 'Point', coordinates: [parseFloat(user[0].pickupLng), parseFloat(user[0].pickupLat)]},
-          {maxDistance: 1000, spherical: true}
-      // User.aggregate([
-      //   {
-      //     $geoNear: {
-      //       near: {
-      //         type: 'Point', coordinates: [parseFloat(users[0].pickupLng), parseFloat(users[0].pickupLat)]
-      //       },
-      //       maxDistance: 1000,
-      //       spherical: true
-      //     }
-      //   }
-      // ],
-      // { cursor:{} }
-      ).then(function(users){
-        for(var u of users){
-          usr.push(u.obj._id);
-        }
-        console.log(usr);
-        console.log(new Date(user[0].timeF));
-        console.log(new Date(user[0].timeT));
-        // res.status(200).send(users);
-        User.find(
-          {$and : [{ _id: { "$in" : usr}, interest: { "$in" : user[0].interest}, myProf: user[0].intProf }, 
-          {$or: [ 
-            { timeF : { $lte: new Date(user[0].timeF) }, timeT : { $gte: new Date(user[0].timeF) } },
-            { timeF : { $lte: new Date(user[0].timeT) }, timeT : { $gte: new Date(user[0].timeT) } },
-            { timeF : { $gte: new Date(user[0].timeF) }, timeT : { $lte: new Date(user[0].timeT) } }
-          ]}]
-        }
-        ).then(users => {
-          //console.log(users)
-          let response = {
-            success: true,
-            users: users
-          };
-          res.status(200).send(response);
-        })
-      }).catch(next);
+  User.getUsers()
+    .then(users => {
+      let response = {
+        success: true,
+        users: users
+      };
+      return res.json(response);
     })
     .catch(err => {
       log.err('mongo', 'failed to get users', err.message || err);
       return next(new Error('Failed to get users'));
     });
-
 });
 
+// user list details
+router.get('/userdetails/:id/:username', function(req, res) {
+  User.find({_id: req.user.id})
+  .then(doc=>{
+    res.json(doc)
+
+  }).catch(err=>{
+console.log(err)
+  })
+  .catch(err => {
+    log.err('mongo', 'failed to get users', err.message || err);
+    return next(new Error('Failed to get users'));
+  });
+});
+
+
+// Route to getSugestedProfileDetails	
+router.get('/getSugestedProfileDetails/:id', function(req, res) {
+  //console.log("dkwbwhb")
+
+  // console.log("am i active?")
+console.log("id usr - "+req.params.id)
+
+  User.findOne({ _id:req.params.id }, function(err, user) {
+    console.log(user)
+
+    if (err) throw err; // Throw error if cannot login
+      console.log("successfullly get getSugestedProfileDetails")
+  res.json(user)
+     
+    
+     
+  
+  });
+});
+
+
+//request accept
 router.get('/accept/:id/:username',  passport.authenticate('jwt', { session: false }), (req, res, next) => {
   User.update({_id: req.user.id}, { $pull: { "requests": {
       username: req.params.username
@@ -260,6 +312,7 @@ router.get('/accept/:id/:username',  passport.authenticate('jwt', { session: fal
     });
 });
 
+//get request
 router.get('/request/:id/:username',  passport.authenticate('jwt', { session: false }), (req, res, next) => {
   User.update({_id: req.params.id}, { $pull: { "requests": {
       _id: req.user.id,
@@ -292,7 +345,8 @@ router.get('/request/:id/:username',  passport.authenticate('jwt', { session: fa
     });
 });
 
-// user list
+
+// user list 
 router.get('/',  passport.authenticate('jwt', { session: false }), (req, res, next) => {
   User.find({_id: req.user.id})
     .then(users => {
@@ -307,6 +361,37 @@ router.get('/',  passport.authenticate('jwt', { session: false }), (req, res, ne
       log.err('mongo', 'failed to get users', err.message || err);
       return next(new Error('Failed to get users'));
     });
+});
+
+
+
+// // Route to activate the user's account	
+router.put('/active', function(req, res) {
+  //console.log("dkwbwhb")
+  User.findOne({ email: req.body.email }, function(err, user) {
+    
+    if (err) throw err; // Throw error if cannot login
+      console.log("active account")
+     
+     var newValues={
+       $set:{active:true}
+     }
+ // console.log(user.email)
+//{_id:user}
+var myquery = { active:false };
+     User.updateOne(myquery,newValues,function(err,res){
+      // console.log(user._id)
+      if (err)
+
+       {
+        console.log("error in activation") 
+        throw err;
+      }
+       console.log("Activation successfull"); 
+    })
+     
+  
+  });
 });
 
 module.exports = router;
