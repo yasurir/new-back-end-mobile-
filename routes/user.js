@@ -106,9 +106,18 @@ router.post('/meet',function(req, res){
 
   if(req.body.timeF){
     newdata['timeF'] =  req.body.timeF;
+    newdata['timeF'] = newdata['timeF'].split(':');
+    newdata['timeF'][ newdata['timeF'].length - 1] =  '00.000Z';
+    newdata['timeF'] = newdata['timeF'].join(':')
+    console.log(newdata['timeF']);
+    
   }
   if(req.body.timeF){
     newdata['timeT'] =  req.body.timeT;
+    newdata['timeT'] = newdata['timeF'].split(':');
+    newdata['timeT'][ newdata['timeT'].length - 1] =  '00.000Z';
+    newdata['timeT'] = newdata['timeT'].join(':')
+    console.log(newdata['timeT']);
   }
   if(req.body.timeF){
     newdata['pickupLng'] =  req.body.pickupLng;
@@ -168,6 +177,7 @@ router.get('/all',  passport.authenticate("jwt", {session: false}), (req, res, n
   let usr = [];
   User.find({_id: req.user.id})
     .then(user => {
+      console.log(user[0].username);
       console.log(user[0].pickupLat);
       console.log(user[0].pickupLng);
       User.geoNear(
@@ -186,10 +196,15 @@ router.get('/all',  passport.authenticate("jwt", {session: false}), (req, res, n
       // ],
       // { cursor:{} }
       ).then(function(users){
+        console.log('location');
+        //console.log(users);
         for(var u of users){
           usr.push(u.obj._id);
+          console.log(u.obj.username);
         }
         console.log(usr);
+        console.log(user[0].interest);
+        console.log(user[0].intProf);
         console.log(new Date(user[0].timeF));
         console.log(new Date(user[0].timeT));
         // res.status(200).send(users);
@@ -202,7 +217,7 @@ router.get('/all',  passport.authenticate("jwt", {session: false}), (req, res, n
           ]}]
         }
         ).then(users => {
-          //console.log(users)
+          console.log(users)
           let response = {
             success: true,
             users: users
