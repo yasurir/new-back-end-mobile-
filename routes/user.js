@@ -48,11 +48,12 @@ router.post('/register', (req, res, next) => {
   }
   else {
     let newUser = new User({
-      username: req.body.username,
-      password: req.body.password,
+      username: req.body.username.trim(),
+      password: req.body.password.trim(),
       role: 'User',
       email: req.body.email
     });
+
 
     User.addUser(newUser, (err, user) => {
       if (err) {
@@ -70,6 +71,35 @@ router.post('/register', (req, res, next) => {
         res.json(response);
       }
     });
+
+    // User.authenticate(req.body.username.trim(), req.body.password.trim(), (err, user) => {
+    //   if (err) {
+    //     response.msg = err.msg;
+    //     res.json(response);
+    //   }  // create the unique token for the user
+    // else if(!user.active){
+    //   response.success = false;
+    //   response.msg = "Your Account is not yet activated.";
+    //   console.log("[%s] authenticated false", user.username);
+    //      }else{
+    //       let signData = {
+    //         id: user._id,
+    //         username: user.username
+    //       };
+    //       let token = jwt.sign(signData, config.secret, {
+    //         expiresIn: 604800
+    //       });
+  
+    //       response.token = "JWT " + token;
+    //       response.user = signData;
+    //       response.success = true;
+    //       response.msg = "User authenticated successfuly.";
+    //       response.email = user.email;
+  
+    //       console.log("[%s] authenticated successfuly", user.username);
+    //       res.json(response);
+    //   }
+    // });
   }
 });
 
@@ -79,15 +109,18 @@ router.post("/authenticate", (req, res, next) => {
   let response = {success: false};
 
   User.authenticate(body.username.trim(), body.password.trim(), (err, user) => {
+    console.log(user.active)
     if (err) {
       response.msg = err.msg;
       res.json(response);
+      console.log(err);
     }  // create the unique token for the user
   else if(!user.active){
     response.success = false;
     response.msg = "Your Account is not yet activated.";
     console.log("[%s] authenticated false", user.username);
-       }else{
+  }else{
+    console.log('sfsfsf')
         let signData = {
           id: user._id,
           username: user.username
@@ -438,6 +471,7 @@ console.log("id usr - "+req.params.id)
 // // Route to activate the user's account	
 
 router.get('/active/:email', function(req, res) {
+  let response = {}
   
 
   // console.log("am i active?")
@@ -450,12 +484,18 @@ router.get('/active/:email', function(req, res) {
            
               if (err) {
                 console.log("error in activation") 
-                throw err;
+                response = {
+                  message: 'error in activation'
+                };
               }
                console.log("Activation successfull"); 
+               response = {
+                message: 'Activation successfull'
+              };
             })
 
 
+            return res.json(response);
 
 });
 
