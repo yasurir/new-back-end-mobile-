@@ -5,6 +5,15 @@ const passport = require('passport');
 const jwt = require('jsonwebtoken');
 const config = require('../config/database');
 const log = require('../log');
+const emailhandler = require("../models/emailconfig");
+var bcrypt = require('bcryptjs');
+
+
+
+
+
+
+
 
 // get a list of ninjas from the db
 router.get('/locationAdd/:id', function(req, res, next){
@@ -31,8 +40,10 @@ router.get('/location', function(req, res, next){
 // register
 router.post('/register', (req, res, next) => {
   let response = {success: false};
+  
   if (!(req.body.password == req.body.confirmPass)) {
     let err = 'The passwords don\'t match';
+    
     return next(err);
   }
   else {
@@ -50,11 +61,12 @@ router.post('/register', (req, res, next) => {
         res.json(response);
       } else {
         response.success = true;
-        response.msg = "User registered successfuly";
+        response.msg = "User authenticated successfuly. Please check your Email to activate your account!";
         response.user = {
           id: user._id,
           username: user.username
         }
+       emailhandler.mailhandleremailconfirm(user.email,user.username,'1212')
         console.log("[%s] registered successfuly", user.username);
         res.json(response);
       }
@@ -91,25 +103,30 @@ router.post('/register', (req, res, next) => {
   }
 });
 
+//login
 router.post("/authenticate", (req, res, next) => {
   let body = req.body;
   let response = {success: false};
 
   User.authenticate(body.username.trim(), body.password.trim(), (err, user) => {
-    console.log(user.active)
     if (err) {
       response.msg = err.msg;
       res.json(response);
       console.log(err);
     }  // create the unique token for the user
   else if(!user.active){
+    console.log(user.active)
     response.success = false;
     response.msg = "Your Account is not yet activated.";
     console.log("[%s] authenticated false", user.username);
   }else{
         let signData = {
           id: user._id,
-          username: user.username
+          username: user.username,
+          pickupLat: user.pickupLat,
+          pickupLng: user.pickupLng,
+          timeF: user.timeF,
+          timeT: user.timeT
         };
         let token = jwt.sign(signData, config.secret, {
           expiresIn: 604800
@@ -118,7 +135,7 @@ router.post("/authenticate", (req, res, next) => {
         response.token = "JWT " + token;
         response.user = signData;
         response.success = true;
-        response.msg = "User authenticated successfuly";
+        response.msg = "User authenticated successfuly.";
         response.email = user.email;
 
         console.log("[%s] authenticated successfuly", user.username);
@@ -127,7 +144,7 @@ router.post("/authenticate", (req, res, next) => {
   });
 });
 
-// profile
+//logged user  profile
 router.get('/profile', passport.authenticate("jwt", {session: false}), (req, res, next) => {
   let response = {success: true};
   response.msg = "Profile retrieved successfuly";
@@ -194,6 +211,16 @@ router.post('/registerdetails',function(req, res){
     return res.status(201).json(doc);
   })     
 })
+
+
+// router.get('/all',  (req, res, next) => {
+//   User.getUsers()
+//     .then(users => {
+//       let response = {
+//         success: true,
+//         users: users
+//       };
+//       return res.json(response);
 
 // router.get('/all',  (req, res, next) => {
 //   User.getUsers()
@@ -267,8 +294,67 @@ router.get('/all',  passport.authenticate("jwt", {session: false}), (req, res, n
       log.err('mongo', 'failed to get users', err.message || err);
       return next(new Error('Failed to get users'));
     });
-
 });
+
+// router.get('/all',  passport.authenticate("jwt", {session: false}), (req, res, next) => {
+//   let usr = [];
+//   User.find({_id: req.user.id})
+//     .then(user => {
+//       console.log(user[0].username);
+//       console.log(user[0].pickupLat);
+//       console.log(user[0].pickupLng);
+//       User.geoNear(
+//           {type: 'Point', coordinates: [parseFloat(user[0].pickupLng), parseFloat(user[0].pickupLat)]},
+//           {maxDistance: 1000, spherical: true}
+//       // User.aggregate([
+//       //   {
+//       //     $geoNear: {
+//       //       near: {
+//       //         type: 'Point', coordinates: [parseFloat(users[0].pickupLng), parseFloat(users[0].pickupLat)]
+//       //       },
+//       //       maxDistance: 1000,
+//       //       spherical: true
+//       //     }
+//       //   }
+//       // ],
+//       // { cursor:{} }
+//       ).then(function(users){
+//         console.log('location');
+//         //console.log(users);
+//         for(var u of users){
+//           usr.push(u.obj._id);
+//           console.log(u.obj.username);
+//         }
+//         console.log(usr);
+//         console.log(user[0].interest);
+//         console.log(user[0].intProf);
+//         console.log(new Date(user[0].timeF));
+//         console.log(new Date(user[0].timeT));
+//         // res.status(200).send(users);
+//         User.find(
+//           {$and : [{ _id: { "$in" : usr}, interest: { "$in" : user[0].interest}, myProf: user[0].intProf }, 
+//           {$or: [ 
+//             { timeF : { $lte: new Date(user[0].timeF) }, timeT : { $gte: new Date(user[0].timeF) } },
+//             { timeF : { $lte: new Date(user[0].timeT) }, timeT : { $gte: new Date(user[0].timeT) } },
+//             { timeF : { $gte: new Date(user[0].timeF) }, timeT : { $lte: new Date(user[0].timeT) } }
+//           ]}]
+//         }
+//         ).then(users => {
+//           console.log(users)
+//           let response = {
+//             success: true,
+//             users: users
+//           };
+//           res.status(200).send(response);
+//         })
+//       }).catch(next);
+//     })
+//     .catch(err => {
+//       log.err('mongo', 'failed to get users', err.message || err);
+//       return next(new Error('Failed to get users'));
+//     });
+
+// });
 
 router.get('/accept/:id/:username',  passport.authenticate('jwt', { session: false }), (req, res, next) => {
   User.update({_id: req.user.id}, { $pull: { "requests": {
@@ -360,6 +446,11 @@ router.get('/',  passport.authenticate('jwt', { session: false }), (req, res, ne
       return next(new Error('Failed to get users'));
     });
 });
+
+
+
+
+
 
 // Route to getSugestedProfileDetails	
 router.get('/getSugestedProfileDetails/:id', function(req, res) {

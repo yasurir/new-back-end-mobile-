@@ -51,7 +51,8 @@ const UserSchema = mongoose.Schema({
   timeF: Date,
   timeT: Date,
   pickupLng: String,
-  pickupLat: String
+  pickupLat: String,
+  active: Boolean
 });
 
 UserSchema.statics.getUserById = function(id, callback) {
