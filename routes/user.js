@@ -165,9 +165,9 @@ router.post('/meet',function(req, res){
     console.log(newdata['timeF']);
     
   }
-  if(req.body.timeF){
+  if(req.body.timeT){
     newdata['timeT'] =  req.body.timeT;
-    newdata['timeT'] = newdata['timeF'].split(':');
+    newdata['timeT'] = newdata['timeT'].split(':');
     newdata['timeT'][ newdata['timeT'].length - 1] =  '00.000Z';
     newdata['timeT'] = newdata['timeT'].join(':')
     console.log(newdata['timeT']);
@@ -365,6 +365,11 @@ router.get('/accept/:id/:username',  passport.authenticate('jwt', { session: fal
     };
     console.log(response);
   })
+  User.update({_id: req.user.id}, { $pull: { "friends": {
+    username: req.params.username
+  } } }).then(users => {
+    return res.json(users);
+  })
   User.update({_id: req.params.id}, { $push: { "friends": {
       _id: req.user.id,
       username: req.user.username
@@ -433,7 +438,26 @@ router.get('/request/:id/:username',  passport.authenticate('jwt', { session: fa
 router.get('/',  passport.authenticate('jwt', { session: false }), (req, res, next) => {
   User.find({_id: req.user.id})
     .then(users => {
+      users[0].password = ''
       //console.log('a00');
+      let response = {
+        success: true,
+        users: users
+      };
+      return res.json(response);
+    })
+    .catch(err => {
+      log.err('mongo', 'failed to get users', err.message || err);
+      return next(new Error('Failed to get users'));
+    });
+});
+
+router.get('/users/:username',  (req, res) => {
+  User.find({username: req.params.username})
+    .then(users => {
+      //console.log(users);
+      if(users.length>0)
+        users[0].password = ''
       let response = {
         success: true,
         users: users
