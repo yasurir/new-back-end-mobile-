@@ -115,7 +115,6 @@ router.post("/authenticate", (req, res, next) => {
       console.log(err);
     }  // create the unique token for the user
   else if(!user.active){
-    console.log(user.active)
     response.success = false;
     response.msg = "Your Account is not yet activated.";
     console.log("[%s] authenticated false", user.username);
@@ -480,25 +479,10 @@ router.get('/active/:email', function(req, res) {
   // console.log("am i active?")
   console.log("email usr - "+req.params.email)
 
-     var newValues={
-          $set:{active:true}
-       }
-        User.updateOne(req.params.email,newValues,function(err,res){
-           
-              if (err) {
-                console.log("error in activation") 
-                response = {
-                  message: 'error in activation'
-                };
-              }
-               console.log("Activation successfull"); 
-               response = {
-                message: 'Activation successfull'
-              };
-            })
-
-
-            return res.json(response);
+  User.updateOne({email:req.params.email},{active: true},{upsert: true}).then(doc=>{
+    console.log("succss - "+JSON.stringify(doc))
+    return res.status(201).json(doc);
+  })  
 
 });
 

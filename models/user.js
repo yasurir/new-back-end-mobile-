@@ -47,12 +47,15 @@ const UserSchema = mongoose.Schema({
       type: Boolean,
       default: false
   },
+  active: {
+    type: Boolean,
+    default: false
+},
   geometry: GeoSchema,
   timeF: Date,
   timeT: Date,
   pickupLng: String,
-  pickupLat: String,
-  active: Boolean
+  pickupLat: String
 });
 
 UserSchema.statics.getUserById = function(id, callback) {
@@ -61,6 +64,11 @@ UserSchema.statics.getUserById = function(id, callback) {
 
 UserSchema.statics.getUserByUsername = function(username, callback) {
   let query = {username: username};
+  User.findOne(query, callback);
+}
+
+UserSchema.statics.getUserByEmail = function(email, callback) {
+  let query = {email: email};
   User.findOne(query, callback);
 }
 
@@ -74,7 +82,17 @@ UserSchema.statics.addUser = function(newUser, callback) {
     if (user) {
       let error = {msg: "Username is already in use"};
       return callback(error);
-    } else {
+    } 
+    User.getUserByEmail(newUser.email, (err, user) => {
+      if (err) return callback({msg: "There was an error on getting the user"});
+      if (user) {
+        let error = {msg: "Email is already in use"};
+        return callback(error);
+      } 
+    
+    
+    else
+    {
       bcryptjs.genSalt(10, (err, salt) => {
         bcryptjs.hash(newUser.password, salt, (err, hash) => {
           if (err) return callback({msg: "There was an error registering the new user"});
@@ -85,6 +103,7 @@ UserSchema.statics.addUser = function(newUser, callback) {
       });
     }
   });
+});
 };
 
 UserSchema.statics.authenticate = function(username, password, callback) {
