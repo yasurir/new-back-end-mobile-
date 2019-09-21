@@ -176,14 +176,83 @@ router.post('/registerdetails',function(req, res){
   })     
 })
 
-router.get('/all',  (req, res, next) => {
-  User.getUsers()
-    .then(users => {
-      let response = {
-        success: true,
-        users: users
-      };
-      return res.json(response);
+
+// router.get('/all',  (req, res, next) => {
+//   User.getUsers()
+//     .then(users => {
+//       let response = {
+//         success: true,
+//         users: users
+//       };
+//       return res.json(response);
+
+// router.get('/all',  (req, res, next) => {
+//   User.getUsers()
+//     .then(users => {
+//       let response = {
+//         success: true,
+//         users: users
+//       };
+//       return res.json(response);
+//     })
+//     .catch(err => {
+//       log.err('mongo', 'failed to get users', err.message || err);
+//       return next(new Error('Failed to get users'));
+//     });
+// });
+
+router.get('/all',  passport.authenticate("jwt", {session: false}), (req, res, next) => {
+  let usr = [];
+  User.find({_id: req.user.id})
+    .then(user => {
+      console.log(user[0].username);
+      console.log(user[0].pickupLat);
+      console.log(user[0].pickupLng);
+      User.geoNear(
+          {type: 'Point', coordinates: [parseFloat(user[0].pickupLng), parseFloat(user[0].pickupLat)]},
+          {maxDistance: 1000, spherical: true}
+      // User.aggregate([
+      //   {
+      //     $geoNear: {
+      //       near: {
+      //         type: 'Point', coordinates: [parseFloat(users[0].pickupLng), parseFloat(users[0].pickupLat)]
+      //       },
+      //       maxDistance: 1000,
+      //       spherical: true
+      //     }
+      //   }
+      // ],
+      // { cursor:{} }
+      ).then(function(users){
+        console.log('location');
+        //console.log(users);
+        for(var u of users){
+          usr.push(u.obj._id);
+          console.log(u.obj.username);
+        }
+        console.log(usr);
+        console.log(user[0].interest);
+        console.log(user[0].intProf);
+        console.log(new Date(user[0].timeF));
+        console.log(new Date(user[0].timeT));
+        // res.status(200).send(users);
+        User.find(
+          {$and : [{ _id: { "$in" : usr}, interest: { "$in" : user[0].interest}, myProf: user[0].intProf }, 
+          {$or: [ 
+            { timeF : { $lte: new Date(user[0].timeF) }, timeT : { $gte: new Date(user[0].timeF) } },
+            { timeF : { $lte: new Date(user[0].timeT) }, timeT : { $gte: new Date(user[0].timeT) } },
+            { timeF : { $gte: new Date(user[0].timeF) }, timeT : { $lte: new Date(user[0].timeT) } }
+          ]}]
+        }
+        ).then(users => {
+          console.log(users)
+          let response = {
+            success: true,
+            users: users
+          };
+          res.status(200).send(response);
+        })
+      }).catch(next);
     })
     .catch(err => {
       log.err('mongo', 'failed to get users', err.message || err);
