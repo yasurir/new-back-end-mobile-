@@ -14,15 +14,14 @@ var transporter = nodemailer.createTransport({
 
 //console.log(config.jwtexp)
 
-exports.mailhandlerpasswordreset =  (email,username,id) => {
+exports.mailhandlerpasswordreset =  (email,id) => {
   console.log("sending resetpassword email ............");
   var mailOptions = {
     from: "niroshanratnayake07@gmail.com",
     to: email,
     subject: "Password Reset",
-    text: "You have successfully reset your pssword",
-  
-   html:  'Hello  ' + username +' <h1> you have successfully reset your password </h1>'
+    text: " please visit -http://localhost:4200/forgotpassword/",
+   //html:'<h1> Hello  ' + username +',</h1><br> Reset your password by clicking on below button<br> <h1> <a href="http://localhost:4200/forgotpassword"> <button style="color:red ">Click hear to activate your Account</button> </a> </h1><br> Regards,<br>The Lunch With Me Team</br>'
   };
 
   transporter.sendMail(mailOptions, function(error, info) {
@@ -40,10 +39,11 @@ exports.mailhandleremailconfirm = (email,username,id) => {
   var mailOptions = {
     from: "niroshanratnayake07@gmail.com",
     to: email,
-    subject: "email confirmation",
+    subject: "Email confirmation on Lunch With Me",
     //text: "  please visit -http://localhost:4200/active/"+ temporarytoken,
    // html:  'Hello  ' + username +`<h1> please visit -${emailConfirmApi}/${id}  to confirm your email </h1>`
-   html:  'Hello  ' + username +' <h1> please visit - <a href="http://localhost:4200/active"> click here </a> to confirm your email </h1>'
+   text: " please visit -http://localhost:4200/active/",
+   html:'<h1> Hello  ' + username +',</h1><br> Thanks for joining Lunch With Me! Please confirm your email address by clicking on below button<br> <h1> <a href="http://localhost:4200/active"> <button style="color:red ">Click hear to activate your Account</button> </a> </h1><br> Regards,<br>The Lunch With Me Team</br>'
   };
 
   transporter.sendMail(mailOptions, function(error, info) {

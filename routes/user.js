@@ -9,15 +9,9 @@ const emailhandler = require("../models/emailconfig");
 var bcrypt = require('bcryptjs');
 
 
-
-
-
-
-
-
 // get a list of ninjas from the db
 router.get('/locationAdd/:id', function(req, res, next){
-  console.log(req.params.id);
+  //console.log(req.params.id);
   User.findByIdAndUpdate(req.params.id, {geometry:{"coordinates":[parseFloat(req.query.lng),parseFloat(req.query.lat)]}}, {rank: '10000'}, function (err, user) {
       if (err) return res.status(500).send("There was a problem updating the user.");
       res.status(200).send(user);
@@ -42,9 +36,12 @@ router.post('/register', (req, res, next) => {
   let response = {success: false};
   
   if (!(req.body.password == req.body.confirmPass)) {
-    let err = 'The passwords don\'t match';
-    
-    return next(err);
+   // let err = 'The passwords don\'t match';
+   response.success = false;
+   response.msg = "The passwords don\'t match. Please check again";
+   console.log("[%s] authenticated false");
+   res.json(response);
+  //  return next(err);
   }
   else {
     let newUser = new User({
@@ -56,6 +53,7 @@ router.post('/register', (req, res, next) => {
 
 
     User.addUser(newUser, (err, user) => {
+      console.log(req.body.password)
       if (err) {
         response.msg = err.msg || "Failed to register user";
         res.json(response);
@@ -117,6 +115,7 @@ router.post("/authenticate", (req, res, next) => {
   else if(!user.active){
     response.success = false;
     response.msg = "Your Account is not yet activated.";
+    res.json(response);
     console.log("[%s] authenticated false", user.username);
   }else{
         let signData = {
@@ -152,7 +151,7 @@ router.get('/profile', passport.authenticate("jwt", {session: false}), (req, res
 });
 
 router.post('/meet',function(req, res){
-  console.log("apu data 1 - - - "+JSON.stringify(req.body))
+ // console.log("apu data 1 - - - "+JSON.stringify(req.body))
 
   var newdata = {
   }
@@ -162,7 +161,7 @@ router.post('/meet',function(req, res){
     newdata['timeF'] = newdata['timeF'].split(':');
     newdata['timeF'][ newdata['timeF'].length - 1] =  '00.000Z';
     newdata['timeF'] = newdata['timeF'].join(':')
-    console.log(newdata['timeF']);
+    //console.log(newdata['timeF']);
     
   }
   if(req.body.timeT){
@@ -170,7 +169,7 @@ router.post('/meet',function(req, res){
     newdata['timeT'] = newdata['timeT'].split(':');
     newdata['timeT'][ newdata['timeT'].length - 1] =  '00.000Z';
     newdata['timeT'] = newdata['timeT'].join(':')
-    console.log(newdata['timeT']);
+    //console.log(newdata['timeT']);
   }
   if(req.body.timeF){
     newdata['pickupLng'] =  req.body.pickupLng;
@@ -184,13 +183,15 @@ router.post('/meet',function(req, res){
 });
 
   User.updateOne({email:req.body.email},newdata,{upsert: true}).then(doc=>{
-    console.log("succss - "+JSON.stringify(doc))
+  //  console.log("succss - "+JSON.stringify(doc))
     return res.status(201).json(doc);
   })     
 })
 
 router.post('/registerdetails',function(req, res){
-  console.log("apu data 0 - - - "+JSON.stringify(req.body))
+
+
+  //console.log("apu data 0 - - - "+JSON.stringify(req.body))
 
   var newdata = {
           fullname: req.body.fullname,
@@ -205,9 +206,12 @@ router.post('/registerdetails',function(req, res){
           creation_dt: Date.now()
   }
 
+  
+
   User.updateOne({email:req.body.email},newdata,{upsert: true}).then(doc=>{
-    console.log("succss - "+JSON.stringify(doc))
-    return res.status(201).json(doc);
+    //console.log("succss - "+JSON.stringify(doc))
+     return res.status(201).json(doc);
+   //return res.status(201);
   })     
 })
 
@@ -240,9 +244,9 @@ router.get('/all',  passport.authenticate("jwt", {session: false}), (req, res, n
   let usr = [];
   User.find({_id: req.user.id})
     .then(user => {
-      console.log(user[0].username);
-      console.log(user[0].pickupLat);
-      console.log(user[0].pickupLng);
+      //console.log(user[0].username);
+      //console.log(user[0].pickupLat);
+      //console.log(user[0].pickupLng);
       User.geoNear(
           {type: 'Point', coordinates: [parseFloat(user[0].pickupLng), parseFloat(user[0].pickupLat)]},
           {maxDistance: 1000, spherical: true}
@@ -259,17 +263,17 @@ router.get('/all',  passport.authenticate("jwt", {session: false}), (req, res, n
       // ],
       // { cursor:{} }
       ).then(function(users){
-        console.log('location');
+        //console.log('location');
         //console.log(users);
         for(var u of users){
           usr.push(u.obj._id);
-          console.log(u.obj.username);
+          //console.log(u.obj.username);
         }
-        console.log(usr);
-        console.log(user[0].interest);
-        console.log(user[0].intProf);
-        console.log(new Date(user[0].timeF));
-        console.log(new Date(user[0].timeT));
+       // console.log(usr);
+        //console.log(user[0].interest);
+        //console.log(user[0].intProf);
+        //console.log(new Date(user[0].timeF));
+        //console.log(new Date(user[0].timeT));
         // res.status(200).send(users);
         User.find(
           {$and : [{ _id: { "$in" : usr}, interest: { "$in" : user[0].interest}, myProf: user[0].intProf }, 
@@ -280,7 +284,7 @@ router.get('/all',  passport.authenticate("jwt", {session: false}), (req, res, n
           ]}]
         }
         ).then(users => {
-          console.log(users)
+          //console.log(users)
           let response = {
             success: true,
             users: users
@@ -363,7 +367,7 @@ router.get('/accept/:id/:username',  passport.authenticate('jwt', { session: fal
       success: true,
       users: users
     };
-    console.log(response);
+  //  console.log(response);
   })
   User.update({_id: req.user.id}, { $pull: { "friends": {
     username: req.params.username
@@ -411,7 +415,7 @@ router.get('/request/:id/:username',  passport.authenticate('jwt', { session: fa
       success: true,
       users: users
     };
-    console.log(response);
+ //   console.log(response);
   })
   .catch(err => {
     log.err('mongo', 'failed to get users', err.message || err);
@@ -480,10 +484,10 @@ router.get('/getSugestedProfileDetails/:id', function(req, res) {
   //console.log("dkwbwhb")
 
   // console.log("am i getSugestedProfileDetails?")
-console.log("id usr - "+req.params.id)
+//console.log("id usr - "+req.params.id)
 
   User.findOne({ _id:req.params.id }, function(err, user) {
-    console.log(user)
+    //console.log(user)
 
     if (err) throw err; // Throw error if cannot login
       console.log("successfullly get getSugestedProfileDetails")
@@ -494,21 +498,132 @@ console.log("id usr - "+req.params.id)
 
 
 
-// // Route to activate the user's account	
-
+ // Route to activate the user's account	
 router.get('/active/:email', function(req, res) {
-  let response = {}
-  
-
-  // console.log("am i active?")
-  console.log("email usr - "+req.params.email)
-
-  User.updateOne({email:req.params.email},{active: true},{upsert: true}).then(doc=>{
-    console.log("succss - "+JSON.stringify(doc))
+   let response = {}
+   console.log("email usr - "+req.params.email)
+    User.updateOne({email:req.params.email},{active: true},{upsert: true}).then(doc=>{
     return res.status(201).json(doc);
   })  
 
 });
+
+
+
+//*********/Route to forgotpasswordEmailVerification**********
+router.post('/forgotpasswordEmailVerification',(req,res,next)=>{
+    console.log(req.body.email)
+    emailhandler.mailhandlerpasswordreset(req.body.email,'1212')
+    console.log("password forgot")
+    res.json(response);
+  
+})
+
+
+// ******Route to forgot password*****************
+router.post('/forgotPassword',(req, res, next) => {
+  console.log("bdjbjb")
+  
+  let response = {success: false};
+  
+  if (!(req.body.newpassword == req.body.newcnfpass)) {
+   console.log("password does not match")
+   response.success = false;
+   response.msg = "The passwords don\'t match. Please check again";
+   console.log("[%s] authenticated false");
+   res.json(response);
+  }
+  else {
+  var newdata={
+  password:req.body.newpassword,
+}
+  User.updateOne({email:req.body.email},newdata,{upsert: true}).then(doc=>{
+  response.success = true;
+  response.msg = "Sucessfully updated your password";
+  console.log("Sucessfully updated your password")
+  res.json(response);
+
+})  
+}
+
+
+});
+
+
+// *********Socialregister******************
+
+
+
+// router.post('/google', (req, res, next) => {
+
+
+// console.log("******** backend check for social media through login******")
+// console.log(req.body.email)
+
+// let response = {success: false};
+
+
+
+// let user = User.findOne({ email: req.body.email }, (err, user) => {
+//   if (err || !user) {
+//       // create a new user and login
+//      console.log("user not found")
+
+//      let newUser = new User({
+//      role: 'User',
+//       email: req.body.email
+//     });
+
+
+//     User.addUser(newUser, (err, user) => {
+//       if (err) {
+
+//        console.log(err)
+//       } else {
+//         response.success = true;
+       
+      
+//         console.log("[%s] registered successfuly");
+      
+//       }
+//     });
+
+
+//   } else {
+//       // update existing user with new social info and login***********************
+//       console.log("user available")
+//       //response.success = true;
+//       let signData = {
+//         id: user._id,
+//         username: user.username,
+//         pickupLat: user.pickupLat,
+//         pickupLng: user.pickupLng,
+//         timeF: user.timeF,
+//         timeT: user.timeT
+//       };
+//       let token = jwt.sign(signData, config.secret, {
+//         expiresIn: 604800
+//       });
+
+//       response.token = "JWT " + token;
+//       response.user = signData;
+//       response.success = true;
+//       response.msg = "User authenticated successfuly.";
+//       // response.email = user.email;
+
+//       console.log("[%s] authenticated successfuly");
+//       res.json(response);
+//   }
+// });
+// })
+router.post('/google', (req, res, next) => {
+
+console.log("fnekjrgbbg")
+
+
+})
+  
+
 
 
 module.exports = router;
