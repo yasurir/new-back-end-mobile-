@@ -1,12 +1,13 @@
 const express = require('express');
 const router = express.Router();
 const User = require('../models/user');
+const Conversation = require('../models/conversation');
 const passport = require('passport');
 const jwt = require('jsonwebtoken');
 const config = require('../config/database');
 const log = require('../log');
 const emailhandler = require("../models/emailconfig");
-var bcrypt = require('bcryptjs');
+var bcryptjs = require('bcryptjs');
 
 
 // get a list of ninjas from the db
@@ -456,6 +457,48 @@ router.get('/',  passport.authenticate('jwt', { session: false }), (req, res, ne
     });
 });
 
+// chat user list
+router.get('/chatlist',  passport.authenticate('jwt', { session: false }), (req, res, next) => {
+  chatlist  = [];
+  User.find({_id: req.user.id})
+    .then(users => {
+      Conversation.find()
+        .then(conversation => {
+          for(var i=0; i<conversation.length; i++){
+            if(conversation[i]['participants'][0])
+              if(conversation[i]['participants'][0]['username'] == users[0]['username']){
+                for(var z=0;z<chatlist.length; z++)
+                  if(chatlist[z]==users[0]['username'] || conversation[i]['participants'][1]['username'])
+                    continue;
+                chatlist.push(conversation[i]['participants'][1]['username'])
+              }
+            if(conversation[i]['participants'][1])
+              if(conversation[i]['participants'][1]['username'] == users[0]['username']){
+                for(var z=0;z<chatlist.length; z++)
+                  if(chatlist[z]==users[0]['username'] || conversation[i]['participants'][0]['username'])
+                    continue;
+                chatlist.push(conversation[i]['participants'][0]['username'])
+              }
+          }
+          let response = {
+            success: true,
+            users: users,
+            chat: chatlist
+          };
+          console.log(chatlist)
+          return res.json(response);
+        })
+        .catch(err => {
+          log.err('mongo', 'failed to get users', err.message || err);
+          return next(new Error('Failed to get users'));
+        });
+    })
+    .catch(err => {
+      log.err('mongo', 'failed to get users', err.message || err);
+      return next(new Error('Failed to get users'));
+    });
+});
+
 router.get('/users/:username',  (req, res) => {
   User.find({username: req.params.username})
     .then(users => {
@@ -508,14 +551,35 @@ router.get('/active/:email', function(req, res) {
 
 });
 
-
-
 //*********/Route to forgotpasswordEmailVerification**********
 router.post('/forgotpasswordEmailVerification',(req,res,next)=>{
-    console.log(req.body.email)
-    emailhandler.mailhandlerpasswordreset(req.body.email,'1212')
-    console.log("password forgot")
-    res.json(response);
+  User.find({email: req.body.email})
+    .then(users => {
+      if(users.length==0){
+        return res.json({'msg': 'user not found'});
+      } else {
+        var token  = '';
+        var characters       = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+        var charactersLength = characters.length;
+        for ( var i = 0; i < 16; i++ ) {
+          token += characters.charAt(Math.floor(Math.random() * charactersLength));
+        }
+        console.log(req.body.email)
+        var newdata={
+          passwordResetToken: token
+        }
+        User.updateOne({email:req.body.email},newdata,{upsert: true}).then(doc=>{
+        })
+        emailhandler.mailhandlerpasswordreset(req.body.email,token)
+        console.log("password forgot")
+        
+        return res.json({"msg": "Mail Sent"});
+      }
+    })
+    .catch(err => {
+      log.err('mongo', 'failed to get users', err.message || err);
+      return next(new Error('Failed to get users'));
+    });
   
 })
 
@@ -534,16 +598,22 @@ router.post('/forgotPassword',(req, res, next) => {
    res.json(response);
   }
   else {
-  var newdata={
-  password:req.body.newpassword,
-}
-  User.updateOne({email:req.body.email},newdata,{upsert: true}).then(doc=>{
-  response.success = true;
-  response.msg = "Sucessfully updated your password";
-  console.log("Sucessfully updated your password")
-  res.json(response);
+    bcryptjs.genSalt(10, (err, salt) => {
+      bcryptjs.hash(req.body.newpassword, salt, (err, hash) => {
+        if (err) return callback({msg: "There was an error registering the new user"});
 
-})  
+        var newdata={
+          password:hash,
+        }
+          User.updateOne({email:req.body.email},newdata,{upsert: true}).then(doc=>{
+          response.success = true;
+          response.msg = "Sucessfully updated your password";
+          console.log("Sucessfully updated your password")
+          res.json(response);
+        
+        })  
+      });
+    });
 }
 
 

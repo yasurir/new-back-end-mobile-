@@ -14,13 +14,13 @@ var transporter = nodemailer.createTransport({
 
 //console.log(config.jwtexp)
 
-exports.mailhandlerpasswordreset =  (email,id) => {
+exports.mailhandlerpasswordreset =  (email,token) => {
   console.log("sending resetpassword email ............");
   var mailOptions = {
     from: "niroshanratnayake07@gmail.com",
     to: email,
     subject: "Password Reset",
-    text: " please visit -http://localhost:4200/forgotpassword/",
+    text: ' please visit -<a href="http://localhost:4200/forgotpassword?token=' + token + '">http://localhost:4200/forgotpassword?token=' + token + '</a>',
    //html:'<h1> Hello  ' + username +',</h1><br> Reset your password by clicking on below button<br> <h1> <a href="http://localhost:4200/forgotpassword"> <button style="color:red ">Click hear to activate your Account</button> </a> </h1><br> Regards,<br>The Lunch With Me Team</br>'
   };
 
