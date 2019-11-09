@@ -15,6 +15,7 @@ const initialize = (server) => {
       msg: "Welcome to the chat server!"
     });
 
+    //Initialize Connection
     socket.on("username", (data) => {
       if (data.username) {
         socket.username = data.username;
@@ -30,10 +31,13 @@ const initialize = (server) => {
       }
     });
 
+    
+  //Get Online Users
     socket.on("getactive", () => {
       socket.emit("active", users);
     });
 
+    //Send Message
     socket.on("message", (data) => {
       if (data.to == "chat-room") {
         socket.broadcast.to("chat-room").emit("message", data.message);
@@ -64,6 +68,7 @@ const initialize = (server) => {
       Message.addMessage(message, (err, newMsg) => {});
     });
 
+    //Disconnect
     socket.on("disconnect", () => {
       let instances = searchConnections(socket.username);
       if (instances.length == 1) {
@@ -85,6 +90,7 @@ const initialize = (server) => {
   });
 };
 
+
 const searchUser = (username) => {
   for (let i = 0; i < users.length; i++) {
     if (users[i].username == username) {
@@ -95,6 +101,7 @@ const searchUser = (username) => {
   return false;
 };
 
+//Search Socket Connection
 const searchConnections = (username) => {
   let found = [];
   for (let conn of connections) {

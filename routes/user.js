@@ -10,7 +10,7 @@ const emailhandler = require("../models/emailconfig");
 var bcryptjs = require('bcryptjs');
 
 
-// get a list of ninjas from the db
+// Update User Location
 router.get('/locationAdd/:id', function(req, res, next){
   //console.log(req.params.id);
   User.findByIdAndUpdate(req.params.id, {geometry:{"coordinates":[parseFloat(req.query.lng),parseFloat(req.query.lat)]}}, {rank: '10000'}, function (err, user) {
@@ -19,11 +19,8 @@ router.get('/locationAdd/:id', function(req, res, next){
   });
 });
 
-// get a list of ninjas from the db
+// Get near users 
 router.get('/location', function(req, res, next){
-  /* Ninja.find({}).then(function(ninjas){
-      res.send(ninjas);
-  }); */
   User.geoNear(
       {type: 'Point', coordinates: [parseFloat(req.query.lng), parseFloat(req.query.lat)]},
       {maxDistance: 1000000, spherical: true}
@@ -151,6 +148,8 @@ router.get('/profile', passport.authenticate("jwt", {session: false}), (req, res
   res.json(response);
 });
 
+
+//Meetup time update
 router.post('/meet',function(req, res){
  // console.log("apu data 1 - - - "+JSON.stringify(req.body))
 
@@ -189,6 +188,7 @@ router.post('/meet',function(req, res){
   })     
 })
 
+//User Details Register
 router.post('/registerdetails',function(req, res){
 
 
@@ -241,6 +241,8 @@ router.post('/registerdetails',function(req, res){
 //     });
 // });
 
+
+//Get Matching Users
 router.get('/all',  passport.authenticate("jwt", {session: false}), (req, res, next) => {
   let usr = [];
   User.find({_id: req.user.id})
@@ -360,6 +362,8 @@ router.get('/all',  passport.authenticate("jwt", {session: false}), (req, res, n
 
 // });
 
+
+//Accept Friend Request
 router.get('/accept/:id/:username',  passport.authenticate('jwt', { session: false }), (req, res, next) => {
   User.update({_id: req.user.id}, { $pull: { "requests": {
       username: req.params.username
@@ -407,6 +411,7 @@ router.get('/accept/:id/:username',  passport.authenticate('jwt', { session: fal
     });
 });
 
+// Send Friend Request
 router.get('/request/:id/:username',  passport.authenticate('jwt', { session: false }), (req, res, next) => {
   User.update({_id: req.params.id}, { $pull: { "requests": {
       _id: req.user.id,
@@ -439,7 +444,7 @@ router.get('/request/:id/:username',  passport.authenticate('jwt', { session: fa
     });
 });
 
-// user list
+// current user list
 router.get('/',  passport.authenticate('jwt', { session: false }), (req, res, next) => {
   User.find({_id: req.user.id})
     .then(users => {
@@ -499,6 +504,7 @@ router.get('/chatlist',  passport.authenticate('jwt', { session: false }), (req,
     });
 });
 
+//Get users by username
 router.get('/users/:username',  (req, res) => {
   User.find({username: req.params.username})
     .then(users => {
@@ -556,7 +562,7 @@ router.post('/forgotpasswordEmailVerification',(req,res,next)=>{
   User.find({email: req.body.email})
     .then(users => {
       if(users.length==0){
-        return res.json({'msg': 'user not found'});
+        return res.status(400).json({'msg': 'user not found'});
       } else {
         var token  = '';
         var characters       = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
