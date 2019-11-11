@@ -151,8 +151,8 @@ router.get('/profile', passport.authenticate("jwt", {session: false}), (req, res
 
 //Meetup time update
 router.post('/meet',function(req, res){
- // console.log("apu data 1 - - - "+JSON.stringify(req.body))
-
+  //console.log("apu data 1 - - - "+JSON.stringify(req.body))
+//console.log("hii");
   var newdata = {
   }
 
@@ -183,16 +183,34 @@ router.post('/meet',function(req, res){
 });
 
   User.updateOne({email:req.body.email},newdata,{upsert: true}).then(doc=>{
-  //  console.log("succss - "+JSON.stringify(doc))
+   console.log("succss - "+JSON.stringify(doc))
     return res.status(201).json(doc);
   })     
 })
+////mobile chat
+router.get('/muserList',  passport.authenticate('jwt', { session: false }), (req, res, next) => {
+  User.find({_id:{$ne:req.user.id} })
+    .then(users => {
+      //users[0].password = ''
+      //console.log('a00');  
+      let response = {
+        success: true,
+        users: users
+      };
+      return res.json(response);
+    })
+    .catch(err => {
+      log.err('mongo', 'failed to get users', err.message || err);
+      return next(new Error('Failed to get users'));
+    });
+});
+
 
 //User Details Register
 router.post('/registerdetails',function(req, res){
 
 
-  //console.log("apu data 0 - - - "+JSON.stringify(req.body))
+  console.log("apu data 0 - - - "+JSON.stringify(req.body))
 
   var newdata = {
           fullname: req.body.fullname,
@@ -445,8 +463,8 @@ router.get('/request/:id/:username',  passport.authenticate('jwt', { session: fa
 });
 
 // current user list
-router.get('/',  passport.authenticate('jwt', { session: false }), (req, res, next) => {
-  User.find({_id: req.user.id})
+router.get('/userList',  passport.authenticate('jwt', { session: false }), (req, res, next) => {
+  User.find({_id:{$ne:req.user.id}} )
     .then(users => {
       users[0].password = ''
       //console.log('a00');
